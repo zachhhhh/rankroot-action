@@ -24,8 +24,8 @@ The job summary shows the score, category breakdown and every failing check.
 
 Checks include: AI search & training crawler access (OAI-SearchBot, ChatGPT-User, PerplexityBot, Claude-SearchBot, GPTBot, ClaudeBot…), content readable without JavaScript, title/description/headings, FAQ content, schema.org entity data, llms.txt, OpenAPI/MCP discovery, pricing and docs.
 
-Free: 20 audits per 10 minutes per runner IP. Higher limits and full-site (multi-page) audits with [RankRoot Pro](https://rankroot-ai.netlify.app/#pricing).
+Free: 20 audits per 10 minutes per runner IP. Higher limits and full-site (multi-page) audits with [RankRoot Pro](https://getrankroot.com/#pricing).
 
-Web app: https://rankroot-ai.netlify.app · MCP server: `https://rankroot-ai.netlify.app/api/mcp`
+Web app: https://getrankroot.com · MCP server: `https://getrankroot.com/api/mcp`
 
 License: MIT

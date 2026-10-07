@@ -36,7 +36,7 @@ runs:
         set -euo pipefail
         AUTH=()
         if [ -n "$RR_KEY" ]; then AUTH=(-H "Authorization: Bearer $RR_KEY"); fi
-        RES=$(curl -fsS "${AUTH[@]}" --get --data-urlencode "url=$RR_URL" https://rankroot-ai.netlify.app/api/audit)
+        RES=$(curl -fsS "${AUTH[@]}" --get --data-urlencode "url=$RR_URL" https://getrankroot.com/api/audit)
         SCORE=$(echo "$RES" | jq -r .score)
         GRADE=$(echo "$RES" | jq -r .grade)
         echo "score=$SCORE" >> "$GITHUB_OUTPUT"
@@ -50,7 +50,7 @@ runs:
           echo "### Issues"
           echo "$RES" | jq -r '.checks[] | select(.status != "pass") | "- **\(.title)** (\(.status)): \(.detail)"'
           echo
-          echo "[Full report](https://rankroot-ai.netlify.app/report?url=$(jq -rn --arg u "$RR_URL" '$u|@uri'))"
+          echo "[Full report](https://getrankroot.com/report?url=$(jq -rn --arg u "$RR_URL" '$u|@uri'))"
         } >> "$GITHUB_STEP_SUMMARY"
         echo "AI visibility score: $SCORE/100"
         if [ "$RR_MIN" -gt 0 ] && [ "$SCORE" -lt "$RR_MIN" ]; then
