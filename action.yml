@@ -1,0 +1,59 @@
+name: "RankRoot AI Visibility Check"
+description: "Score how visible your site is to ChatGPT, Perplexity, Claude and AI agents. Fail CI if it drops below a threshold."
+author: "RankRoot"
+branding:
+  icon: "eye"
+  color: "purple"
+inputs:
+  url:
+    description: "Site URL to audit (e.g. https://example.com)"
+    required: true
+  min-score:
+    description: "Fail the job if the score is below this (0-100). 0 disables failing."
+    required: false
+    default: "0"
+  api-key:
+    description: "Optional RankRoot Pro/Agency license key for higher rate limits"
+    required: false
+    default: ""
+outputs:
+  score:
+    description: "AI visibility score (0-100)"
+    value: ${{ steps.audit.outputs.score }}
+  grade:
+    description: "Letter grade"
+    value: ${{ steps.audit.outputs.grade }}
+runs:
+  using: "composite"
+  steps:
+    - id: audit
+      shell: bash
+      env:
+        RR_URL: ${{ inputs.url }}
+        RR_MIN: ${{ inputs.min-score }}
+        RR_KEY: ${{ inputs.api-key }}
+      run: |
+        set -euo pipefail
+        AUTH=()
+        if [ -n "$RR_KEY" ]; then AUTH=(-H "Authorization: Bearer $RR_KEY"); fi
+        RES=$(curl -fsS "${AUTH[@]}" --get --data-urlencode "url=$RR_URL" https://rankroot-ai.netlify.app/api/audit)
+        SCORE=$(echo "$RES" | jq -r .score)
+        GRADE=$(echo "$RES" | jq -r .grade)
+        echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+        echo "grade=$GRADE" >> "$GITHUB_OUTPUT"
+        {
+          echo "## AI visibility: $SCORE/100 (grade $GRADE)"
+          echo
+          echo "| Category | Score |"; echo "|---|---|"
+          echo "$RES" | jq -r '.categories[] | "| \(.label) | \(.score) |"'
+          echo
+          echo "### Issues"
+          echo "$RES" | jq -r '.checks[] | select(.status != "pass") | "- **\(.title)** (\(.status)): \(.detail)"'
+          echo
+          echo "[Full report](https://rankroot-ai.netlify.app/report?url=$(jq -rn --arg u "$RR_URL" '$u|@uri'))"
+        } >> "$GITHUB_STEP_SUMMARY"
+        echo "AI visibility score: $SCORE/100"
+        if [ "$RR_MIN" -gt 0 ] && [ "$SCORE" -lt "$RR_MIN" ]; then
+          echo "::error::AI visibility score $SCORE is below minimum $RR_MIN"
+          exit 1
+        fi
