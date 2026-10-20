@@ -141,6 +141,8 @@ for (const it of items) {
     write(rel, it.file);
     written.push(`- **${it.title}** → \`${rel}\``);
     ids.push(it.fixId);
+  } else if (it.kind === "rewrite" && it.file) {
+    manual.push(`**${it.title}**: ${it.note || ""}\n\n<details><summary>Rewritten copy</summary>\n\n${it.file.trim()}\n\n</details>`);
   } else if (it.file) {
     manual.push(`**${it.title}**: ${it.note || ""}\n\n\`\`\`json\n${it.file.trim()}\n\`\`\``);
   }
