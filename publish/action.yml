@@ -1,0 +1,62 @@
+name: "RankRoot: publish approved fixes"
+description: "Turns the AI-visibility fixes you approved in RankRoot into a pull request: new pages, FAQ and llms.txt, written for your framework."
+author: "RankRoot"
+branding:
+  icon: "git-pull-request"
+  color: "purple"
+inputs:
+  api-key:
+    description: "Your RankRoot license key (store it as a repository secret)"
+    required: true
+  public-dir:
+    description: "Folder your site serves static files from (auto-detected: public/ or static/)"
+    required: false
+    default: ""
+  base:
+    description: "Branch to open the pull request against (default: the repository's default branch)"
+    required: false
+    default: ""
+  token:
+    description: "Token used to open the pull request"
+    required: false
+    default: ${{ github.token }}
+outputs:
+  pull-request-url:
+    description: "URL of the pull request, if one was opened or updated"
+    value: ${{ steps.pr.outputs.pull-request-url }}
+runs:
+  using: "composite"
+  steps:
+    - id: write
+      shell: bash
+      env:
+        RR_KEY: ${{ inputs.api-key }}
+        RR_PUBLIC_DIR: ${{ inputs.public-dir }}
+      run: node "${{ github.action_path }}/write.mjs"
+    - id: pr
+      if: steps.write.outputs.count != '0'
+      uses: peter-evans/create-pull-request@v7
+      with:
+        token: ${{ inputs.token }}
+        branch: rankroot/fixes
+        base: ${{ inputs.base }}
+        delete-branch: true
+        commit-message: "RankRoot: publish approved AI-visibility fixes"
+        title: "RankRoot: pages and files so AI assistants can recommend you"
+        body-path: ${{ runner.temp }}/rankroot-pr-body.md
+        labels: rankroot
+    - if: steps.pr.outputs.pull-request-url != ''
+      shell: bash
+      env:
+        RR_KEY: ${{ inputs.api-key }}
+        RR_IDS: ${{ steps.write.outputs.ids }}
+        RR_PR: ${{ steps.pr.outputs.pull-request-url }}
+      run: |
+        node -e '
+          const ids = (process.env.RR_IDS || "").split(",").filter(Boolean);
+          fetch("https://getrankroot.com/api/engine", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ key: process.env.RR_KEY, action: "pr", ids, url: process.env.RR_PR }),
+          }).then(r => console.log("RankRoot notified:", r.status)).catch(e => console.log("RankRoot notify failed:", e.message));
+        '
